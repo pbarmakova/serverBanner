@@ -1,5 +1,8 @@
 #include "server.h"         // подключаем заголовок, где объявлены методы
 #include <QDebug>           // для вывода сообщений в консоль (аналог printf)
+#include <QFile>
+#include <QTextStream>
+#include <QDateTime>
 
 Server::Server(QObject *parent) : QTcpServer(parent) {
     // Конструктор сервера
@@ -10,10 +13,10 @@ void Server::startServer(quint16 port) {
     // Пытаемся начать прослушивание порта
     if (listen(QHostAddress::LocalHost, port)) {
         // Успешно
-        qDebug() << "✅ Server started on port" << port;
+        log("✅ Server started on port " + QString::number(port));
     } else {
         // Ошибка
-        qDebug() << "❌ Failed to start server";
+        log("❌ Failed to start server");
     }
 }
 void Server::incomingConnection(qintptr socketDescriptor) {
@@ -25,15 +28,15 @@ void Server::incomingConnection(qintptr socketDescriptor) {
 
     // Добавляем его в список подключённых клиентов
     clients.append(socket);
-    qDebug() << "📡 New client connected:" << socket->peerAddress().toString();
-    qDebug() << "👥 Total clients connected:" << clients.count();
+    log("📡 New client connected: " + socket->peerAddress().toString());
+    log("👥 Clients connected: " + QByteArray::number(clients.size()));
 
 
     // Обработка входящих данных от клиента
-    connect(socket, &QTcpSocket::readyRead, [socket]() {
+    connect(socket, &QTcpSocket::readyRead, [socket, this]() {
         QByteArray data = socket->readAll();               // читаем всё, что прислал клиент
         QString message = QString::fromUtf8(data).trimmed();
-        qDebug() << "📨 Received:" << data;
+        log("📨 Received:" + QString::fromUtf8(data));
 
         if (message.compare("PING", Qt::CaseInsensitive) == 0) {
             socket->write("PONG\n");
@@ -49,8 +52,20 @@ void Server::incomingConnection(qintptr socketDescriptor) {
 
     // Обработка отключения клиента
     connect(socket, &QTcpSocket::disconnected, [=]() {
-        qDebug() << "❌ Client disconnected:" << socket->peerAddress().toString();
+        log("❌ Client disconnected:" + socket->peerAddress().toString());
         clients.removeOne(socket);                         // удаляем из списка
         socket->deleteLater();                             // безопасно удаляем сокет
     });
+
+}
+void Server::log(const QString &message) {
+    // выводим в консоль
+    qDebug() << message;
+
+    // дописываем в log.txt
+    QFile file("log.txt");
+    if (file.open(QIODevice::Append | QIODevice::Text)) {
+        QTextStream out(&file);
+        out << QDateTime::currentDateTime().toString("[yyyy-MM-dd hh:mm:ss] ") << message << "\n";
+    }
 }

@@ -20,6 +20,8 @@ protected:
 
 private:
     QList<QTcpSocket*> clients;  // список подключённых клиентов
+    void log(const QString &message);
+
 };
 
 #endif // SERVER_H
