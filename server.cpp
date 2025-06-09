@@ -3,6 +3,9 @@
 #include <QFile>
 #include <QTextStream>
 #include <QDateTime>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonParseError>
 
 Server::Server(QObject *parent) : QTcpServer(parent) {
     // Конструктор сервера
@@ -38,6 +41,27 @@ void Server::incomingConnection(qintptr socketDescriptor) {
         QString message = QString::fromUtf8(data).trimmed();
         log("📨 Received:" + QString::fromUtf8(data));
 
+        // Если данные начинаются с '{' — пробуем распарсить как JSON
+        if (message.trimmed().startsWith('{')) {
+            QJsonParseError parseError;
+            QJsonDocument jsonDoc = QJsonDocument::fromJson(data, &parseError);
+
+            if (parseError.error != QJsonParseError::NoError) {
+                QString errorMsg = "❌ Invalid JSON: " + parseError.errorString();
+                log(errorMsg);
+                socket->write(errorMsg.toUtf8() + "\n");
+                return;
+            }
+
+            if (jsonDoc.isObject()) {
+                QJsonObject obj = jsonDoc.object();
+                QString event = obj.value("event").toString();
+                QString name = obj.value("name").toString();
+                log("📦 JSON received: event = " + event + ", name = " + name);
+                socket->write("✅ JSON received\n");
+                return;
+            }
+        }
         if (message.compare("PING", Qt::CaseInsensitive) == 0) {
             socket->write("PONG\n");
                log("📤 Sent: PONG");
