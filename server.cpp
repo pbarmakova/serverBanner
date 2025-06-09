@@ -40,13 +40,23 @@ void Server::incomingConnection(qintptr socketDescriptor) {
 
         if (message.compare("PING", Qt::CaseInsensitive) == 0) {
             socket->write("PONG\n");
+               log("📤 Sent: PONG");
         } else if (message.compare("STATUS", Qt::CaseInsensitive) == 0) {
-            socket->write("👥 Clients connected: " + QByteArray::number(clients.size()) + "\n");
+            QString status = "👥 Clients connected: " + QString::number(clients.size()) + "\n";
+            socket->write(status.toUtf8());                  // отправляем ответ клиенту
+            log("📤 Sent: " + status.trimmed());             // логируем отправленный ответ
         } else if (message.compare("EXIT", Qt::CaseInsensitive) == 0) {
-            socket->write("👋 Bye!\n");
-            socket->disconnectFromHost();
+            QString goodbye = "👋 Bye!\n";
+            socket->write(goodbye.toUtf8());
+            log("📤 Sent: " + goodbye.trimmed());
+
+            // Отключаемся только когда сообщение точно отправлено
+            connect(socket, &QTcpSocket::bytesWritten, socket, [socket]() {
+                socket->disconnectFromHost();
+            });
         } else {
             socket->write("❓ Unknown command\n");
+            log("❓ Unknown command\n");
         }
     });
 
