@@ -1,105 +1,64 @@
-#include "server.h"         // подключаем заголовок, где объявлены методы
-#include <QDebug>           // для вывода сообщений в консоль (аналог printf)
+#include "server.h"
+#include <QDebug>
 #include <QFile>
 #include <QTextStream>
 #include <QDateTime>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonParseError>
+#include "logger.h"
+#include "commandprocessor.h"
 
-Server::Server(QObject *parent) : QTcpServer(parent) {
-    // Конструктор сервера
-    // Пока ничего не настраиваем, просто передаём родителя
-    // Qt автоматически освободит память, если будет parent
-}
+Server::Server(QObject *parent) : QTcpServer(parent) {}
+
 void Server::startServer(quint16 port) {
-    // Пытаемся начать прослушивание порта
     if (listen(QHostAddress::LocalHost, port)) {
-        // Успешно
-        log("✅ Server started on port " + QString::number(port));
+        Logger::instance().log("✅ Server started on port " + QString::number(port));
     } else {
-        // Ошибка
-        log("❌ Failed to start server");
+        Logger::instance().log("❌ Failed to start server");
     }
 }
-void Server::incomingConnection(qintptr socketDescriptor) {
-    // Создаём сокет для клиента
-    auto socket = new QTcpSocket(this);
 
-    // Привязываем сокет к уже установленному соединению
+void Server::incomingConnection(qintptr socketDescriptor) {
+    auto socket = new QTcpSocket(this);
     socket->setSocketDescriptor(socketDescriptor);
 
-    // Добавляем его в список подключённых клиентов
     clients.append(socket);
-    log("📡 New client connected: " + socket->peerAddress().toString());
-    log("👥 Clients connected: " + QByteArray::number(clients.size()));
+    Logger::instance().log("📡 New client connected: " + socket->peerAddress().toString());
+    Logger::instance().log("👥 Clients connected: " + QByteArray::number(clients.size()));
 
-
-    // Обработка входящих данных от клиента
     connect(socket, &QTcpSocket::readyRead, [socket, this]() {
-        QByteArray data = socket->readAll();               // читаем всё, что прислал клиент
+        QByteArray data = socket->readAll();
         QString message = QString::fromUtf8(data).trimmed();
-        log("📨 Received:" + QString::fromUtf8(data));
+        Logger::instance().log("📨 Received: " + message);
 
-        // Если данные начинаются с '{' — пробуем распарсить как JSON
-        if (message.trimmed().startsWith('{')) {
-            QJsonParseError parseError;
-            QJsonDocument jsonDoc = QJsonDocument::fromJson(data, &parseError);
+        QJsonParseError parseError;
+        QJsonDocument jsonDoc = QJsonDocument::fromJson(data, &parseError);
 
-            if (parseError.error != QJsonParseError::NoError) {
-                QString errorMsg = "❌ Invalid JSON: " + parseError.errorString();
-                log(errorMsg);
-                socket->write(errorMsg.toUtf8() + "\n");
-                return;
+        if (!jsonDoc.isNull() && jsonDoc.isObject()) {
+            QJsonObject obj = jsonDoc.object();
+            QString event = obj.value("event").toString().toUpper();
+
+            CommandProcessor processor(clients);
+            auto handlers = processor.getHandlers();
+
+            if (handlers.contains(event)) {
+                handlers[event](socket);
+            } else {
+                QString error = "❓ Unknown event: " + event + "\n";
+                socket->write(error.toUtf8());
+                Logger::instance().log("📤 Sent: " + error.trimmed());
             }
-
-            if (jsonDoc.isObject()) {
-                QJsonObject obj = jsonDoc.object();
-                QString event = obj.value("event").toString();
-                QString name = obj.value("name").toString();
-                log("📦 JSON received: event = " + event + ", name = " + name);
-                socket->write("✅ JSON received\n");
-                return;
-            }
-        }
-        if (message.compare("PING", Qt::CaseInsensitive) == 0) {
-            socket->write("PONG\n");
-               log("📤 Sent: PONG");
-        } else if (message.compare("STATUS", Qt::CaseInsensitive) == 0) {
-            QString status = "👥 Clients connected: " + QString::number(clients.size()) + "\n";
-            socket->write(status.toUtf8());                  // отправляем ответ клиенту
-            log("📤 Sent: " + status.trimmed());             // логируем отправленный ответ
-        } else if (message.compare("EXIT", Qt::CaseInsensitive) == 0) {
-            QString goodbye = "👋 Bye!\n";
-            socket->write(goodbye.toUtf8());
-            log("📤 Sent: " + goodbye.trimmed());
-
-            // Отключаемся только когда сообщение точно отправлено
-            connect(socket, &QTcpSocket::bytesWritten, socket, [socket]() {
-                socket->disconnectFromHost();
-            });
         } else {
-            socket->write("❓ Unknown command\n");
-            log("❓ Unknown command\n");
+            QString error = "❌ Invalid JSON: " + parseError.errorString() + "\n";
+            socket->write(error.toUtf8());
+            Logger::instance().log("📤 Sent: " + error.trimmed());
         }
     });
 
-    // Обработка отключения клиента
     connect(socket, &QTcpSocket::disconnected, [=]() {
-        log("❌ Client disconnected:" + socket->peerAddress().toString());
-        clients.removeOne(socket);                         // удаляем из списка
-        socket->deleteLater();                             // безопасно удаляем сокет
+        Logger::instance().log("❌ Client disconnected: " + socket->peerAddress().toString());
+        clients.removeOne(socket);
+        socket->deleteLater();
     });
-
-}
-void Server::log(const QString &message) {
-    // выводим в консоль
-    qDebug() << message;
-
-    // дописываем в log.txt
-    QFile file("log.txt");
-    if (file.open(QIODevice::Append | QIODevice::Text)) {
-        QTextStream out(&file);
-        out << QDateTime::currentDateTime().toString("[yyyy-MM-dd hh:mm:ss] ") << message << "\n";
-    }
 }

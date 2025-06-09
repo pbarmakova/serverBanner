@@ -11,7 +11,11 @@ find_package(Qt6 REQUIRED COMPONENTS Core Network)
 add_executable(BannerServer
     main.cpp
     server.cpp
-    server.h   # обязательно добавить заголовочный файл с Q_OBJECT!
+    server.h
+    commandprocessor.h
+    commandprocessor.cpp
+    logger.h
+    logger.cpp   # обязательно добавить заголовочный файл с Q_OBJECT!
 )
 
 # Подключаем нужные Qt-библиотеки
