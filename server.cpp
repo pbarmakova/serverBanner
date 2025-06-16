@@ -27,12 +27,6 @@ void Server::incomingConnection(qintptr socketDescriptor) {
     Logger::instance().log("📡 New client connected: " + socket->peerAddress().toString());
     Logger::instance().log("👥 Clients connected: " + QByteArray::number(clients.size()));
 
-    connect(socket, &QTcpSocket::bytesWritten, this, [socket]() {
-        if (socket->bytesToWrite() == 0) {
-            socket->disconnectFromHost();
-        }
-    });
-
     connect(socket, &QTcpSocket::readyRead, [socket, this]() {
         QByteArray data = socket->readAll();
         QString message = QString::fromUtf8(data).trimmed();

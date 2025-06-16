@@ -1,29 +1,41 @@
-import socket
-import json
+import socket, json
 
-# Параметры подключения (замени на нужные)
-HOST = '127.0.0.1'  # или твой IP
-PORT = 1234        # твой порт
+HOST = '127.0.0.1'
+PORT = 1234
 
-# Формируем JSON-команду
-request = {
-    "command": "GET_FILE",
-    "filename": "cat.jpg"   # или другой файл из /assets/
-}
+request = {"command": "GET_FILE", "filename": "video.mp4"}
 
-# Подключаемся к серверу
 sock = socket.create_connection((HOST, PORT))
+sock.sendall((json.dumps(request) + "\n").encode('utf-8'))
 
-# Отправляем JSON-запрос
-sock.sendall(json.dumps(request).encode('utf-8'))
+# Получаем meta
+meta_bytes = b''
+while not meta_bytes.endswith(b'\n'):
+    chunk = sock.recv(1)
+    if not chunk:
+        print('Сервер разорвал соединение до передачи мета')
+        exit(1)
+    meta_bytes += chunk
 
-# Принимаем ответ (файл) и сохраняем
-with open("received_cat.jpg", "wb") as f:
-    while True:
-        data = sock.recv(4096)
+meta_end = meta_bytes.index(b'\n') + 1
+meta_part = meta_bytes[:meta_end]
+file_part = meta_bytes[meta_end:]
+
+meta = json.loads(meta_part.decode().strip())
+print("meta:", meta)
+print("file_part len:", len(file_part))
+
+received = len(file_part)
+with open("received_" + meta["filename"], "wb") as f:
+    if file_part:
+        f.write(file_part)
+    while received < meta["size"]:
+        data = sock.recv(min(65536, meta["size"] - received))
         if not data:
+            print('recv дал пустоту')
             break
         f.write(data)
+        received += len(data)
+        print(f"{received}/{meta['size']} bytes received")
 
-sock.close()
-print("Файл получен!")
+print("Done, received:", received)

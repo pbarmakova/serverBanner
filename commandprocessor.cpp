@@ -5,6 +5,9 @@
 #include <QCoreApplication>
 #include <QFile>
 
+constexpr qint64 CHUNK_SIZE = 64 * 1024; // 64 KB, можно менять на 128*1024 или др.
+
+
 CommandProcessor::CommandProcessor(const QList<QTcpSocket*>& clients)
     : clients(clients) {}
 
@@ -20,6 +23,7 @@ QHash<QString, std::function<void(QTcpSocket*, const QJsonObject&)>> CommandProc
         socket->write("👋 Bye\n");
         socket->flush();
         Logger::instance().log("📤 Sent: Bye");
+        socket->disconnectFromHost();
     };
 
     handlers["STATUS"] = [this](QTcpSocket* socket, const QJsonObject&) {
@@ -30,7 +34,9 @@ QHash<QString, std::function<void(QTcpSocket*, const QJsonObject&)>> CommandProc
 
     // Новый обработчик GET_FILE
     handlers["GET_FILE"] = [](QTcpSocket* socket, const QJsonObject& json) {
+
         QString filename = json.value("filename").toString();
+        Logger::instance().log("🔥 Получен запрос GET_FILE на " + filename);
         if (filename.isEmpty()) {
             socket->write("ERROR: Missing filename\n");
             Logger::instance().log("❌ Missing filename in GET_FILE");
@@ -59,12 +65,35 @@ QHash<QString, std::function<void(QTcpSocket*, const QJsonObject&)>> CommandProc
             return;
         }
 
-        QByteArray fileData = file.readAll();
-        file.close();
+        // Сначала отправим метаинформацию (например, размер и имя файла)
+        QJsonObject meta;
+        meta["filename"] = filename;
+        meta["size"] = file.size();
+        QJsonDocument doc(meta);
+        QByteArray metaJson = doc.toJson(QJsonDocument::Compact) + "\n"; // \n — разделитель
 
-        socket->write(fileData);
+        socket->write(metaJson);
         socket->flush();
-        Logger::instance().log("📤 File sent: " + filename + " (" + QString::number(fileData.size()) + " bytes)");
+
+        // Теперь отправим файл по чанкам
+        constexpr qint64 CHUNK_SIZE = 64 * 1024; // 64 KB
+        while (!file.atEnd()) {
+            QByteArray chunk = file.read(CHUNK_SIZE);
+            if (chunk.isEmpty())
+                break;
+            socket->write(chunk);
+            socket->flush();
+
+            // waitForBytesWritten по необходимости, как раньше
+            if (socket->bytesToWrite() > 2 * CHUNK_SIZE)
+                socket->waitForBytesWritten(-1);
+        }
+        file.close();
+        socket->flush();
+
+        Logger::instance().log("📤 File sent: " + filename + " (" + QString::number(meta["size"].toInt()) + " bytes)");
+        socket->disconnectFromHost();
+
     };
 
     return handlers;
