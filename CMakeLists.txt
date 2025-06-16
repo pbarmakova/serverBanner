@@ -15,7 +15,8 @@ add_executable(BannerServer
     commandprocessor.h
     commandprocessor.cpp
     logger.h
-    logger.cpp   # обязательно добавить заголовочный файл с Q_OBJECT!
+    logger.cpp
+    build/test_client.py   # обязательно добавить заголовочный файл с Q_OBJECT!
 )
 
 # Подключаем нужные Qt-библиотеки

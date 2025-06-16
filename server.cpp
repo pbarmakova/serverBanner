@@ -27,6 +27,12 @@ void Server::incomingConnection(qintptr socketDescriptor) {
     Logger::instance().log("📡 New client connected: " + socket->peerAddress().toString());
     Logger::instance().log("👥 Clients connected: " + QByteArray::number(clients.size()));
 
+    connect(socket, &QTcpSocket::bytesWritten, this, [socket]() {
+        if (socket->bytesToWrite() == 0) {
+            socket->disconnectFromHost();
+        }
+    });
+
     connect(socket, &QTcpSocket::readyRead, [socket, this]() {
         QByteArray data = socket->readAll();
         QString message = QString::fromUtf8(data).trimmed();
@@ -37,15 +43,15 @@ void Server::incomingConnection(qintptr socketDescriptor) {
 
         if (!jsonDoc.isNull() && jsonDoc.isObject()) {
             QJsonObject obj = jsonDoc.object();
-            QString event = obj.value("event").toString().toUpper();
+            QString command = obj.value("command").toString().toUpper();
 
             CommandProcessor processor(clients);
             auto handlers = processor.getHandlers();
 
-            if (handlers.contains(event)) {
-                handlers[event](socket);
+            if (handlers.contains(command)) {
+                handlers[command](socket, obj); // передаём и сокет, и сам JSON!
             } else {
-                QString error = "❓ Unknown event: " + event + "\n";
+                QString error = "❓ Unknown command: " + command + "\n";
                 socket->write(error.toUtf8());
                 Logger::instance().log("📤 Sent: " + error.trimmed());
             }

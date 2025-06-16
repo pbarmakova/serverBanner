@@ -8,8 +8,7 @@
 class CommandProcessor {
 public:
     CommandProcessor(const QList<QTcpSocket*>& clients);
-    void process(const QString& event, QTcpSocket* socket);
-    QHash<QString, std::function<void(QTcpSocket*)>> getHandlers() const;
+    QHash<QString, std::function<void(QTcpSocket*, const QJsonObject&)>> getHandlers() const;
 
 private:
     const QList<QTcpSocket*>& clients;
