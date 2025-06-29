@@ -21,39 +21,38 @@
 
 ## Структура проекта
 
-```
 .
-├── commandprocessor.cpp/h   # Обработка команд (логика маршрутизации)
-├── logger.cpp/h            # Логирование действий сервера
-├── main.cpp                # Точка входа, запуск приложения
-├── mainwindow.cpp/h/.ui    # Графический интерфейс (Qt Widgets)
-├── server.cpp/h            # TCP‑сервер и работа с клиентами
-├── assets/                 # Папка для отправляемых файлов (создайте вручную)
-└── log.txt                 # Лог-файл (создаётся автоматически)
-```
+├── src/
+│   ├── build/
+│   │   ├── BannerAdmin      # Исполняемый файл — десктопное приложение с GUI
+│   │   └── assets/          # Файлы для передачи клиенту
+│   │       ├── cat.jpg
+│   │       └── video.mp4
+│   ├── commandprocessor.cpp/h
+│   ├── logger.cpp/h
+│   ├── main.cpp
+│   ├── mainwindow.cpp/h/.ui
+│   ├── server.cpp/h
+├── README.md
+└── ...
 
----
 
 ## Быстрый старт
 
 ### 1. Зависимости
 
-- **Qt 5/6** (`QtCore`, `QtNetwork`, `QtWidgets`)
+- Qt 5/6 (QtCore, QtNetwork, QtWidgets)
 - C++17 или выше
 
-### 2. Сборка (Linux/macOS/Windows)
+### 2. Сборка и запуск
 
-Через Qt Creator:
+1. Соберите проект (через Qt Creator или вручную с помощью qmake/make).
+2. В каталоге `src/build` появится исполняемый файл:
+   - macOS/Linux: `BannerAdmin`
+   - Windows: `BannerAdmin.exe`
+3. Запустите файл — появится графический интерфейс для наблюдения подключённых клиентов.
+4. Для передачи файлов клиентам используйте папку `src/build/assets`.
 
-1. Откройте `CMakeLists.txt` или `.pro`-файл проекта.
-2. Соберите и запустите проект (F5).
-
-**CLI-сборка**:
-```sh
-qmake serverBanner.pro
-make
-./serverBanner
-```
 
 ### 3. Использование
 

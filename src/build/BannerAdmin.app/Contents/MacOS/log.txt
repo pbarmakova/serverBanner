@@ -1,0 +1,33 @@
+[2025-06-26 13:17:57] ✅ Server started on port 1234
+[2025-06-26 13:18:45] 📡 New client connected: 127.0.0.1
+[2025-06-26 13:18:45] 👥 Clients connected: 1
+[2025-06-26 13:18:50] 📨 Received: he
+[2025-06-26 13:18:50] 📤 Sent: ❌ Invalid JSON: illegal number
+[2025-06-26 13:18:53] 📨 Received: hello
+[2025-06-26 13:18:53] 📤 Sent: ❌ Invalid JSON: illegal number
+[2025-06-26 13:19:09] 📨 Received: {"comman":"status"}
+[2025-06-26 13:19:09] 📤 Sent: ❓ Unknown command:
+[2025-06-26 13:19:35] 📡 New client connected: 127.0.0.1
+[2025-06-26 13:19:35] 👥 Clients connected: 2
+[2025-06-26 13:19:39] 📨 Received: exit
+[2025-06-26 13:19:39] 📤 Sent: ❌ Invalid JSON: illegal number
+[2025-06-26 13:19:51] 📨 Received: {"command":"EXIT"}
+[2025-06-26 13:19:51] 📤 Sent: Bye
+[2025-06-26 13:19:51] ❌ Client disconnected: 127.0.0.1
+[2025-06-26 14:32:05] 📡 New client connected: 127.0.0.1
+[2025-06-26 14:32:05] 👥 Clients connected: 2
+[2025-06-26 14:32:12] 📨 Received: {"command":"EXIT"}
+[2025-06-26 14:32:12] 📤 Sent: Bye
+[2025-06-26 14:32:12] ❌ Client disconnected: 127.0.0.1
+[2025-06-26 14:34:12] 📡 New client connected: 127.0.0.1
+[2025-06-26 14:34:12] 👥 Clients connected: 2
+[2025-06-26 14:34:12] 📨 Received: {"command": "PING"}
+[2025-06-26 14:34:12] 📤 Sent: PONG
+[2025-06-26 14:34:12] ❌ Client disconnected: 127.0.0.1
+[2025-06-26 14:40:29] 📡 New client connected: 127.0.0.1
+[2025-06-26 14:40:29] 👥 Clients connected: 2
+[2025-06-26 14:40:47] 📨 Received: {"comman":"EXIT"}
+[2025-06-26 14:40:47] 📤 Sent: ❓ Unknown command:
+[2025-06-26 14:41:01] 📨 Received: {"command":"EXIT"}
+[2025-06-26 14:41:01] 📤 Sent: Bye
+[2025-06-26 14:41:01] ❌ Client disconnected: 127.0.0.1
