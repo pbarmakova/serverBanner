@@ -1,0 +1,2 @@
+set(__QT_DEPLOY_TARGET_BannerAdmin_FILE /Users/user/Downloads/Telegram Desktop/BannerServer/AdminBanner/BannerAdmin/build/Qt_6_9_1_macos-Debug/BannerAdmin.app/Contents/MacOS/BannerAdmin)
+set(__QT_DEPLOY_TARGET_BannerAdmin_TYPE EXECUTABLE)
